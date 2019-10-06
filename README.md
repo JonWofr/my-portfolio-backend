@@ -1,3 +1,0 @@
-# myportfolio-backend
-
-first commit

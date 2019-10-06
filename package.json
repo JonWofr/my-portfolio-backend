@@ -1,0 +1,23 @@
+{
+  "name": "myportfolio-backend",
+  "version": "1.0.0",
+  "description": "Testing",
+  "main": "\u001b[D\u001b[D\u001b[D\u001bserver.js)",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JonWofr/myportfolio-backend.git"
+  },
+  "author": "Jonas Wolfram",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/JonWofr/myportfolio-backend/issues"
+  },
+  "homepage": "https://github.com/JonWofr/myportfolio-backend#readme",
+  "dependencies": {
+    "express": "^4.17.1",
+    "mongodb": "^3.3.2"
+  }
+}
