@@ -2,7 +2,7 @@
   "name": "myportfolio-backend",
   "version": "1.0.0",
   "description": "Testing",
-  "main": "\u001b[D\u001b[D\u001b[D\u001bserver.js)",
+  "main": "\u001b[D\u001b[D\u001b[D\u001bapp.js)",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
