@@ -3,6 +3,7 @@ const express = require("express");
 const http = require("http");
 const bodyParser = require("body-parser");
 const mongoDb = require("mongodb");
+const ObjectId = require("mongodb").ObjectId;
 
 //Constants
 const app = express();
@@ -24,6 +25,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use((req, res, next) => {
     res.header("Access-Control-Allow-Origin", "http://localhost:3000");
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    res.header("Access-Control-Allow-Methods", "OPTIONS, GET, POST, PUT, PATCH, DELETE");
     next();
 });
 
@@ -42,12 +44,13 @@ client.connect((err) => {
 app.get("/projects", (req, res) => {
     colProjects.find().toArray((err, result) => {
         if (err) throw err;
-        console.log(`Fetched ${result.length} stored projects from the database`)
+        console.log(`Fetched ${result.length} stored projects from the database`);
+        res.status(200);
         res.send(result)
     })
 })
 
-app.post("/projects/:projectName", (req, res) => {
+app.post("/projects", (req, res) => {
     //: is used to to bind the value which stands behind the slash in the url request to the property defined here and is accessible via req.params 
     //?propertyName=value defines the property in the url request itself and is accessible via req.query
     colProjects.findOne({ "projectName": req.body.projectName }, (err, result) => {
@@ -56,8 +59,9 @@ app.post("/projects/:projectName", (req, res) => {
             colProjects.insertOne(req.body)
                 .then((result) => {
                     console.log("Successfully inserted a document into the collection", result);
+                    res.status(201);
                     //TODO Why is the inserted document stored inside an array?
-                    res.send({"_id": result.insertedId});
+                    res.send(result);
                 })
                 .catch((error) => {
                     console.log("An error occurred trying to insert a document into the collection", error);
@@ -69,10 +73,20 @@ app.post("/projects/:projectName", (req, res) => {
     })
 })
 
+app.delete("/projects/:id", (req, res) => {
+    const id = req.params.id;
+    colProjects.remove({ "_id": new ObjectId(id)}, (err, result) => {
+        if (err) throw err;
+        res.status(200);
+        res.send(result)
+    })
+})
+
 app.get("/slides", (req, res) => {
     colSlides.find().toArray((err, result) => {
         if (err) throw err;
         console.log(`Fetched ${result.length} stored slides from the database`)
+        res.status(200);
         res.send(result)
     })
 })
