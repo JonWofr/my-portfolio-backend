@@ -46,7 +46,7 @@ app.get("/projects", (req, res) => {
         if (err) throw err;
         console.log(`Fetched ${result.length} stored projects from the database`);
         res.status(200);
-        res.send(result)
+        res.send(result);
     })
 })
 
@@ -60,7 +60,6 @@ app.post("/projects", (req, res) => {
                 .then((result) => {
                     console.log("Successfully inserted a document into the collection", result);
                     res.status(201);
-                    //TODO Why is the inserted document stored inside an array?
                     res.send(result);
                 })
                 .catch((error) => {
@@ -73,12 +72,32 @@ app.post("/projects", (req, res) => {
     })
 })
 
-app.delete("/projects/:id", (req, res) => {
-    const id = req.params.id;
-    colProjects.remove({ "_id": new ObjectId(id)}, (err, result) => {
+app.delete("/projects/:_id", (req, res) => {
+    const _id = req.params._id;
+    colProjects.remove({ "_id": new ObjectId(_id)}, (err, result) => {
         if (err) throw err;
         res.status(200);
         res.send(result)
+    })
+})
+
+app.put("/projects/:_id", (req, res) => {
+    const _id = req.params._id;
+    const { projectName, categories, technologies, teamMembers, startDate, endDate, paragraphs } = req.body;
+    colProjects.findOne({_id: ObjectId(_id)}, (err, result) => {
+        if (err) throw err;
+        // If nothing matches the query null is returned
+        if (result) {
+            colProjects.updateOne({_id: ObjectId(_id)}, {$set: { projectName, categories, technologies, teamMembers, startDate, endDate, paragraphs }}, (err, result) => {
+                if (err) throw err;
+                console.log("Successfully replaced a document in the collection", result);
+                res.status(200);
+                res.send(req.body);
+            })
+        }
+        else {
+            console.log("There is no document with given id stored in the collection", _id);
+        }
     })
 })
 
