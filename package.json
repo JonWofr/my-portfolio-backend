@@ -4,8 +4,10 @@
   "description": "Testing",
   "main": "\u001b[D\u001b[D\u001b[D\u001bapp.js)",
   "scripts": {
+    "dev": "set NODE_ENVIRONMENT=development&&node app.js",
+    "prod": "set NODE_ENVIRONMENT=production&&node app.js",
     "start": "node app.js"
-    },
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/JonWofr/myportfolio-backend.git"
@@ -17,6 +19,7 @@
   },
   "homepage": "https://github.com/JonWofr/myportfolio-backend#readme",
   "dependencies": {
+    "dotenv": "^8.2.0",
     "express": "^4.17.1",
     "mongodb": "^3.3.2"
   }

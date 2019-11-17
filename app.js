@@ -3,23 +3,32 @@ const express = require("express");
 const http = require("http");
 const bodyParser = require("body-parser");
 const mongoDb = require("mongodb");
-const ObjectId = require("mongodb").ObjectId;
+const dotenv = require("dotenv");
 
 //Constants
 const app = express();
 const server = http.createServer(app);
 
-const dbUrl = "mongodb://localhost:27017";
-const client = new mongoDb.MongoClient(dbUrl, { useUnifiedTopology: true, useNewUrlParser: true });
 const database = "myportfolio";
 const collectionProjects = "projects";
 const collectionSlides = "slides"
 
-let colProjects;
-let colSlides;
-
 //Initialization
-app.use(bodyParser.json());
+if (process.env.NODE_ENVIRONMENT === "development"){
+    dotenv.config({
+        path: "./development.env"
+    });
+}
+else if (process.env.NODE_ENVIRONMENT === "production"){
+    dotenv.config({
+        path: "./production.env"
+    });
+}
+else {
+    console.log("The environment is not known. Server could not be started.")
+}
+
+app.use(bodyParser.json({limit: "20mb"}));
 app.use(bodyParser.urlencoded({ extended: true }));
 
 app.use((req, res, next) => {
@@ -29,77 +38,22 @@ app.use((req, res, next) => {
     next();
 });
 
+const client = new mongoDb.MongoClient(process.env.MONGO_DB_URL, { useUnifiedTopology: true, useNewUrlParser: true });
+
 client.connect((err) => {
     if (err) throw err;
-    console.log(`Successfully connected to mongoDb with URL ${dbUrl}`);
+    console.log(`Successfully connected to mongoDb with URL ${process.env.MONGO_DB_URL}`);
 
     const db = client.db(database);
-    colProjects = db.collection(collectionProjects);
-    colSlides = db.collection(collectionSlides)
+    exports.colProjects = db.collection(collectionProjects);
+    exports.colSlides = db.collection(collectionSlides)
     client.close();
 })
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-app.get("/projects", (req, res) => {
-    colProjects.find().toArray((err, result) => {
-        if (err) throw err;
-        console.log(`Fetched ${result.length} stored projects from the database`);
-        res.status(200);
-        res.send(result);
-    })
-})
-
-app.post("/projects", (req, res) => {
-    //: is used to to bind the value which stands behind the slash in the url request to the property defined here and is accessible via req.params 
-    //?propertyName=value defines the property in the url request itself and is accessible via req.query
-    colProjects.findOne({ "projectName": req.body.projectName }, (err, result) => {
-        if (err) throw err;
-        if (!result) {
-            colProjects.insertOne(req.body)
-                .then((result) => {
-                    console.log("Successfully inserted a document into the collection", result);
-                    res.status(201);
-                    res.send(result);
-                })
-                .catch((error) => {
-                    console.log("An error occurred trying to insert a document into the collection", error);
-                })
-        }
-        else {
-            console.log("Project with name " + req.body.projectName + " has already been inserted into the collection");
-        }
-    })
-})
-
-app.delete("/projects/:_id", (req, res) => {
-    const _id = req.params._id;
-    colProjects.remove({ "_id": new ObjectId(_id)}, (err, result) => {
-        if (err) throw err;
-        res.status(200);
-        res.send(result)
-    })
-})
-
-app.put("/projects/:_id", (req, res) => {
-    const _id = req.params._id;
-    const { projectName, categories, technologies, teamMembers, startDate, endDate, paragraphs } = req.body;
-    colProjects.findOne({_id: ObjectId(_id)}, (err, result) => {
-        if (err) throw err;
-        // If nothing matches the query null is returned
-        if (result) {
-            colProjects.updateOne({_id: ObjectId(_id)}, {$set: { projectName, categories, technologies, teamMembers, startDate, endDate, paragraphs }}, (err, result) => {
-                if (err) throw err;
-                console.log("Successfully replaced a document in the collection", result);
-                res.status(200);
-                res.send(req.body);
-            })
-        }
-        else {
-            console.log("There is no document with given id stored in the collection", _id);
-        }
-    })
-})
+app.use("/projects", require('./src/projects/routes'));
+app.use(express.static("public"));
 
 app.get("/slides", (req, res) => {
     colSlides.find().toArray((err, result) => {
@@ -110,14 +64,6 @@ app.get("/slides", (req, res) => {
     })
 })
 
-
-
-
-
-
-
-
-
-server.listen(2019, () => {
-    console.log("server is running on port 2019");
+server.listen(process.env.PORT, () => {
+    console.log(`server is running in ${process.env.MODE} on port ${process.env.PORT} with URL ${process.env.URL}`);
 });

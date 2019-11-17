@@ -2,3 +2,7 @@
 
 # dependencies
 /node_modules
+
+# environment variables
+/development.env
+/production.env
