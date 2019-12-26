@@ -68,11 +68,11 @@ exports.insertOne = (req, res) => {
 
 const getLocalFilePathByFileName = (fileName) => {
     const rootPath = path.dirname(require.main.filename);
-    return `${rootPath}${process.env.PATH_TO_PUBLIC_FILES}${process.env.PATH_FROM_PUBLIC_FILES_TO_IMAGE_UPLOADS}/${fileName}`;
+    return `${rootPath}/public/image_uploads/${fileName}`;
 }
 
 const getRemoteFilePathByFileName = (fileName) => {
-    return `${process.env.URL}${process.env.PATH_FROM_PUBLIC_FILES_TO_IMAGE_UPLOADS}/${fileName}`;
+    return `${process.env.PROTOCOL}://${process.env.HOST}:${process.env.PORT}/public/image_uploads/${fileName}`;
 }
 
 const parseDataUrlToBuffer = (dataUrl) => {
