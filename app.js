@@ -53,7 +53,7 @@ client.connect((err) => {
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 app.use("/projects", require('./src/projects/routes'));
-app.use(express.static("public"));
+app.use("/public", express.static("public"));
 
 app.get("/slides", (req, res) => {
     colSlides.find().toArray((err, result) => {
@@ -65,5 +65,5 @@ app.get("/slides", (req, res) => {
 })
 
 server.listen(process.env.PORT, () => {
-    console.log(`server is running in ${process.env.MODE} on port ${process.env.PORT} with URL ${process.env.URL}`);
+    console.log(`server is running in ${process.env.NODE_ENVIRONMENT} on port ${process.env.PORT} on host ${process.env.HOST}`);
 });
