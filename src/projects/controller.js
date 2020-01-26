@@ -3,13 +3,30 @@ const path = require('path');
 const app = require('../../app');
 const ObjectId = require('mongodb').ObjectId;
 
-exports.getAll = (req, res) => {
-    app.colProjects.find().toArray((err, result) => {
+exports.getAll = async (req, res) => {
+    const page = parseInt(req.query.page);
+    const limit = parseInt(req.query.limit);
+
+    const startIndex = (page - 1) * limit;
+
+    const data = {};
+
+    let documentCount = 0;
+
+    try {
+        documentCount = await app.colProjects.countDocuments();
+    }
+    catch(e) {
+        res.status(500).send();
+    }
+
+    data.lastPage = 1 + Math.floor(documentCount / limit);
+
+    app.colProjects.find().skip(startIndex).limit(limit).toArray((err, result) => {
         if (err) throw err;
-        console.log(`Fetched ${result.length} stored projects from the database`);
-        res.status(200);
-        res.send(result);
-    })
+        data.current = result;
+        res.status(200).send(data);
+    });
 }
 
 
@@ -92,8 +109,7 @@ exports.deleteOne = (req, res) => {
     const _id = req.params._id;
     app.colProjects.remove({ "_id": new ObjectId(_id) }, (err, result) => {
         if (err) throw err;
-        res.status(200);
-        res.send(result)
+        res.status(200).send(result);
     })
 }
 
@@ -131,8 +147,7 @@ exports.updateOne = (req, res) => {
                     app.colProjects.updateOne({ _id: ObjectId(_id) }, { $set: { projectName, categories, technologies, teamMembers, startDate, endDate, paragraphs } }, (err, result) => {
                         if (err) throw err;
                         console.log("Successfully replaced a document in the collection", result);
-                        res.status(200);
-                        res.send(req.body);
+                        res.status(200).send(req.body);
                     })
                 })
                 .catch((err) => {
@@ -143,13 +158,13 @@ exports.updateOne = (req, res) => {
                 app.colProjects.updateOne({ _id: ObjectId(_id) }, { $set: { projectName, categories, technologies, teamMembers, startDate, endDate, paragraphs } }, (err, result) => {
                     if (err) throw err;
                     console.log("Successfully replaced a document in the collection", result);
-                    res.status(200);
-                    res.send(req.body);
+                    res.status(200).send(req.body);
                 })
             }
         }
         else {
             console.log("There is no document with given id stored in the collection", _id);
+            res.status(404).send(`There is no document with id ${id} stored in the collection`);
         }
     })
 }
