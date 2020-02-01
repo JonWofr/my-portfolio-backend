@@ -4,138 +4,182 @@ const app = require('../../app');
 const ObjectId = require('mongodb').ObjectId;
 
 exports.getAll = async (req, res) => {
-    const page = parseInt(req.query.page);
-    const limit = parseInt(req.query.limit);
+    let { page, limit } = req.query;
+
+    page = parseInt(page);
+    limit = parseInt(limit);
 
     const startIndex = (page - 1) * limit;
 
-    const data = {};
-
-    let documentCount = 0;
+    let lastPage;
 
     try {
-        documentCount = await app.colProjects.countDocuments();
+        lastPage = await getLastPageNumber(limit)
     }
-    catch(e) {
-        res.status(500).send();
+    catch (err) {
+        return res.status(500).send(err);
     }
-
-    data.lastPage = 1 + Math.floor(documentCount / limit);
 
     app.colProjects.find().skip(startIndex).limit(limit).toArray((err, result) => {
-        if (err) throw err;
-        data.current = result;
-        res.status(200).send(data);
+        if (err) {
+            return res.status(500).send(err);
+        }
+
+        const body = {
+            data: result,
+            appendix: {
+                lastPage
+            }
+        };
+
+        return res.status(200).json(body);
     });
+}
+
+const getLastPageNumber = async (limit) => {
+    let documentCount = await app.colProjects.countDocuments();
+
+    return Math.ceil(documentCount / limit);
 }
 
 
 exports.insertOne = (req, res) => {
+    const { data: reqData, appendix: { limit } } = req.body;
     //: is used to to bind the value which stands behind the slash in the url request to the property defined here and is accessible via req.params 
     //?propertyName=value defines the property in the url request itself and is accessible via req.query
-    app.colProjects.findOne({ "projectName": req.body.projectName }, (err, result) => {
-        if (err) throw err;
+    app.colProjects.findOne({ "projectName": reqData.projectName }, (err, result) => {
+        if (err) {
+            return res.status(500).send(err);
+        }
         if (!result) {
             // The image comes in the format of a dataUrl. Therefore we have to extract the data from this string (i.e. the Base64 encoded String) and decode it to get the String in binary format.
             // Once we have done that, we can create a Blob 
             let writeFilePromises = [];
 
-            req.body.paragraphs.forEach((paragraph) => {
+            reqData.paragraphs.forEach((paragraph) => {
                 const { url, dataUrl } = paragraph.image;
 
                 const localFilePath = getLocalFilePathByFileName(url);
                 const remoteFilePath = getRemoteFilePathByFileName(url);
-                console.log("Remote filePath is ", remoteFilePath);
-                console.log("Local filePath is ", localFilePath);
 
                 try {
                     const buffer = parseDataUrlToBuffer(dataUrl);
                     writeFilePromises.push(writeFilePromise(localFilePath, buffer));
                 }
-                catch (e) {
-                    console.log(e);
+                catch (err) {
+                    return res.status(500).send(err);
                 }
+
                 paragraph.image.url = remoteFilePath;
-                paragraph.image.dataUrl = null;
+                paragraph.image.dataUrl = undefined;
             })
 
             Promise.all(writeFilePromises)
                 .then(() => {
-                    console.log("successfully created new images")
-                    app.colProjects.insertOne(req.body)
-                        .then((result) => {
-                            console.log("Successfully inserted a document into the collection", result);
-                            res.status(201);
-                            res.send(result);
-                        })
-                        .catch((error) => {
-                            console.log("An error occurred trying to insert a document into the collection", error);
+                    app.colProjects.insertOne(reqData)
+                        .then(async result => {
+                            let lastPage;
+
+                            try {
+                                lastPage = await getLastPageNumber(limit)
+                            }
+                            catch (err) {
+                                return res.status(500).send(err);
+                            }
+
+                            const body = {
+                                data: {
+                                    _id: result.insertedId
+                                },
+                                appendix: {
+                                    lastPage
+                                }
+                            };
+
+                            return res.status(201).json(body);
                         })
                 })
-                .catch((err) => {
-                    console.log("an error occurred in one fo the promises");
+                .catch(err => {
+                    return res.status(500).send(err);
                 })
         }
-        else {
-            console.log("Project with name " + req.body.projectName + " has already been inserted into the collection");
-        }
+        else return res.status(400).send(`Project with name ${reqData.projectName} has already been inserted into the collection`)
     })
 }
 
 
-const getLocalFilePathByFileName = (fileName) => {
+const getLocalFilePathByFileName = fileName => {
     const rootPath = path.dirname(require.main.filename);
     return `${rootPath}/public/image_uploads/${fileName}`;
 }
 
-const getRemoteFilePathByFileName = (fileName) => {
-    return `${process.env.PROTOCOL}://${process.env.HOST}:${process.env.PORT}/public/image_uploads/${fileName}`;
-}
+const getRemoteFilePathByFileName = fileName => `${process.env.PROTOCOL}://${process.env.HOST}:${process.env.PORT}/public/image_uploads/${fileName}`;
 
 const parseDataUrlToBuffer = (dataUrl) => {
     const encodedImageData = dataUrl.split(',')[1];
     return Buffer.from(encodedImageData, "base64");
 }
 
-const writeFilePromise = (path, buffer) => {
-    return new Promise((resolve) => {
-        fs.writeFileSync(path, buffer);
-        resolve();
-    })
-}
+const writeFilePromise = (path, buffer) => new Promise((resolve) => {
+    fs.writeFileSync(path, buffer);
+    resolve();
+});
 
 
 exports.deleteOne = (req, res) => {
-    const _id = req.params._id;
-    app.colProjects.remove({ "_id": new ObjectId(_id) }, (err, result) => {
-        if (err) throw err;
-        res.status(200).send(result);
+    const { _id } = req.params;
+    const { appendix: { limit } } = req.body;
+
+    app.colProjects.remove({ "_id": new ObjectId(_id) }, async (err, result) => {
+        if (err) {
+            return res.status(500).send(err);
+        }
+
+        let lastPage;
+
+        try {
+            lastPage = await getLastPageNumber(limit)
+        }
+        catch (err) {
+            return res.status(500).send(err);
+        }
+
+        const body = {
+            data: {},
+            appendix: {
+                lastPage
+            }
+        };
+
+        return res.status(200).json(body);
     })
 }
 
 exports.updateOne = (req, res) => {
-    const _id = req.params._id;
-    const { projectName, categories, technologies, teamMembers, startDate, endDate, paragraphs } = req.body;
+    const { _id } = req.params;
+    const { data : reqData } = req.body;
+    const  { projectName, categories, technologies, teamMembers, startDate, endDate, paragraphs } = reqData;
+
     app.colProjects.findOne({ _id: ObjectId(_id) }, (err, result) => {
-        if (err) throw err;
+        if (err) {
+            return res.status(500).send(err);
+        };
         // If nothing matches the query null is returned
         if (result) {
             const writeFilePromises = [];
-            paragraphs.forEach((paragraph) => {
+            paragraphs.forEach(paragraph => {
                 if (paragraph.image.dataUrl) {
                     const { url, dataUrl } = paragraph.image;
 
                     const localFilePath = getLocalFilePathByFileName(url);
                     const remoteFilePath = getRemoteFilePathByFileName(url);
-                    console.log("Remote filePath is ", remoteFilePath);
-                    console.log("Local filePath is ", localFilePath);
-    
+
                     try {
                         const buffer = parseDataUrlToBuffer(dataUrl);
                         writeFilePromises.push(writeFilePromise(localFilePath, buffer));
                     }
                     catch (err) {
-                        throw err;
+                        return res.status(500).send(err);
                     }
                     paragraph.image.url = remoteFilePath;
                     paragraph.image.dataUrl = null;
@@ -143,28 +187,41 @@ exports.updateOne = (req, res) => {
             })
             if (writeFilePromises.length > 0) {
                 Promise.all(writeFilePromises)
-                .then(() => {
-                    app.colProjects.updateOne({ _id: ObjectId(_id) }, { $set: { projectName, categories, technologies, teamMembers, startDate, endDate, paragraphs } }, (err, result) => {
-                        if (err) throw err;
-                        console.log("Successfully replaced a document in the collection", result);
-                        res.status(200).send(req.body);
+                    .then(() => {
+                        app.colProjects.updateOne({ _id: ObjectId(_id) }, { $set: { projectName, categories, technologies, teamMembers, startDate, endDate, paragraphs } }, (err, result) => {
+                            if (err) {
+                                return res.status(500).send(err);
+                            }
+
+                            const body = {
+                                data: reqData,
+                                appendix: {}
+                            }
+
+                            return res.status(200).json(body);
+                        })
                     })
-                })
-                .catch((err) => {
-                    throw err;
-                })
+                    .catch((err) => {
+                        return res.status(500).send(err);
+                    })
             }
             else {
                 app.colProjects.updateOne({ _id: ObjectId(_id) }, { $set: { projectName, categories, technologies, teamMembers, startDate, endDate, paragraphs } }, (err, result) => {
-                    if (err) throw err;
-                    console.log("Successfully replaced a document in the collection", result);
-                    res.status(200).send(req.body);
+                    if (err) {
+                        return res.status(500).send(err);
+                    }
+
+                    const body = {
+                        data: reqData,
+                        appendix: {}
+                    }
+
+                    return res.status(200).json(body);
                 })
             }
         }
         else {
-            console.log("There is no document with given id stored in the collection", _id);
-            res.status(404).send(`There is no document with id ${id} stored in the collection`);
+            return res.status(404).send(`There is no document with id ${id} stored in the collection`);
         }
     })
 }

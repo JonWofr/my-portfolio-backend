@@ -14,21 +14,16 @@ const collectionProjects = "projects";
 const collectionSlides = "slides"
 
 //Initialization
-if (process.env.NODE_ENVIRONMENT === "development"){
-    dotenv.config({
-        path: "./development.env"
-    });
-}
-else if (process.env.NODE_ENVIRONMENT === "production"){
-    dotenv.config({
-        path: "./production.env"
-    });
-}
-else {
-    console.log("The environment is not known. Server could not be started.")
-}
+if (process.env.NODE_ENVIRONMENT === "development") dotenv.config({
+    path: "./development.env"
+});
+else if (process.env.NODE_ENVIRONMENT === "production") dotenv.config({
+    path: "./production.env"
+});
+else throw "The environment is not know. The server could not be started.";
 
-app.use(bodyParser.json({limit: "20mb"}));
+
+app.use(bodyParser.json({ limit: "20mb" }));
 app.use(bodyParser.urlencoded({ extended: true }));
 
 app.use((req, res, next) => {
@@ -40,8 +35,9 @@ app.use((req, res, next) => {
 
 const client = new mongoDb.MongoClient(process.env.MONGO_DB_URL, { useUnifiedTopology: true, useNewUrlParser: true });
 
-client.connect((err) => {
+client.connect(err => {
     if (err) throw err;
+
     console.log(`Successfully connected to mongoDb with URL ${process.env.MONGO_DB_URL}`);
 
     const db = client.db(database);
@@ -52,18 +48,12 @@ client.connect((err) => {
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+app.use((req, res, next) => {
+    console.info('Time: ', Date.now(), req.method, req.originalUrl);
+    next();
+});
+
 app.use("/projects", require('./src/projects/routes'));
 app.use("/public", express.static("public"));
 
-app.get("/slides", (req, res) => {
-    colSlides.find().toArray((err, result) => {
-        if (err) throw err;
-        console.log(`Fetched ${result.length} stored slides from the database`)
-        res.status(200);
-        res.send(result)
-    })
-})
-
-server.listen(process.env.PORT, () => {
-    console.log(`server is running in ${process.env.NODE_ENVIRONMENT} on port ${process.env.PORT} on host ${process.env.HOST}`);
-});
+server.listen(process.env.PORT, () => console.log(`server is running in ${process.env.NODE_ENVIRONMENT} on ${process.env.URL}`));
