@@ -6,3 +6,6 @@
 # environment variables
 /development.env
 /production.env
+
+# image uploads
+/public/image_uploads
