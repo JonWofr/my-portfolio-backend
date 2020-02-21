@@ -4,23 +4,24 @@ const app = require('../../app');
 const ObjectId = require('mongodb').ObjectId;
 
 exports.getAll = async (req, res) => {
-    let { page, limit } = req.query;
+    let { page, limit, query } = req.query;
 
-    page = parseInt(page);
-    limit = parseInt(limit);
+    page = page ? parseInt(page) : 1;
+    limit = limit ? parseInt(limit) : 5;
+    query = query ? JSON.parse(query) : {};
 
     const startIndex = (page - 1) * limit;
 
     let lastPage;
 
     try {
-        lastPage = await getLastPageNumber(limit)
+        lastPage = await getLastPageNumber(limit, query)
     }
     catch (err) {
         return res.status(500).send(err);
     }
 
-    app.colProjects.find().skip(startIndex).limit(limit).toArray((err, result) => {
+    app.colProjects.find(query).skip(startIndex).limit(limit).toArray((err, result) => {
         if (err) {
             return res.status(500).send(err);
         }
@@ -28,7 +29,9 @@ exports.getAll = async (req, res) => {
         const body = {
             data: result,
             appendix: {
-                lastPage
+                page,
+                lastPage,
+                limit
             }
         };
 
@@ -36,8 +39,8 @@ exports.getAll = async (req, res) => {
     });
 }
 
-const getLastPageNumber = async (limit) => {
-    let documentCount = await app.colProjects.countDocuments();
+const getLastPageNumber = async (limit, query) => {
+    let documentCount = await app.colProjects.countDocuments(query);
 
     return Math.ceil(documentCount / limit);
 }
@@ -47,61 +50,51 @@ exports.insertOne = (req, res) => {
     const { data: reqData, appendix: { limit } } = req.body;
     //: is used to to bind the value which stands behind the slash in the url request to the property defined here and is accessible via req.params 
     //?propertyName=value defines the property in the url request itself and is accessible via req.query
-    app.colProjects.findOne({ "projectName": reqData.projectName }, (err, result) => {
+    app.colProjects.findOne({ "projectName": reqData.projectName }, async (err, result) => {
         if (err) {
             return res.status(500).send(err);
         }
         if (!result) {
-            // The image comes in the format of a dataUrl. Therefore we have to extract the data from this string (i.e. the Base64 encoded String) and decode it to get the String in binary format.
-            // Once we have done that, we can create a Blob 
-            let writeFilePromises = [];
+            try {
+                // The image comes in the format of a dataUrl. Therefore we have to extract the data from this string (i.e. the Base64 encoded String) and decode it to get the String in binary format.
+                // Once we have done that, we can create a Blob 
+                let writeFilePromises = [];
 
-            reqData.paragraphs.forEach((paragraph) => {
-                const { url, dataUrl } = paragraph.image;
+                reqData.paragraphs.forEach((paragraph) => {
+                    const { url, dataUrl } = paragraph.image;
 
-                const localFilePath = getLocalFilePathByFileName(url);
-                const remoteFilePath = getRemoteFilePathByFileName(url);
+                    if (url !== "" && dataUrl !== "") {
+                        const localFilePath = getLocalFilePathByFileName(url);
+                        const remoteFilePath = getRemoteFilePathByFileName(url);
 
-                try {
-                    const buffer = parseDataUrlToBuffer(dataUrl);
-                    writeFilePromises.push(writeFilePromise(localFilePath, buffer));
-                }
-                catch (err) {
-                    return res.status(500).send(err);
-                }
+                        const buffer = parseDataUrlToBuffer(dataUrl);
+                        writeFilePromises.push(writeFilePromise(localFilePath, buffer));
 
-                paragraph.image.url = remoteFilePath;
-                paragraph.image.dataUrl = undefined;
-            })
-
-            Promise.all(writeFilePromises)
-                .then(() => {
-                    app.colProjects.insertOne(reqData)
-                        .then(async result => {
-                            let lastPage;
-
-                            try {
-                                lastPage = await getLastPageNumber(limit)
-                            }
-                            catch (err) {
-                                return res.status(500).send(err);
-                            }
-
-                            const body = {
-                                data: {
-                                    _id: result.insertedId
-                                },
-                                appendix: {
-                                    lastPage
-                                }
-                            };
-
-                            return res.status(201).json(body);
-                        })
+                        paragraph.image.url = remoteFilePath;
+                        paragraph.image.dataUrl = undefined;
+                    }
                 })
-                .catch(err => {
-                    return res.status(500).send(err);
-                })
+
+                if (writeFilePromises.length > 0) await Promise.all(writeFilePromises);
+
+                const result = await app.colProjects.insertOne(reqData);
+
+                const lastPage = await getLastPageNumber(limit)
+
+                const body = {
+                    data: {
+                        _id: result.insertedId
+                    },
+                    appendix: {
+                        lastPage
+                    }
+                };
+
+                return res.status(201).json(body);
+            }
+            catch (err) {
+                res.status(500).send(err);
+            }
         }
         else return res.status(400).send(`Project with name ${reqData.projectName} has already been inserted into the collection`)
     })
@@ -157,8 +150,8 @@ exports.deleteOne = (req, res) => {
 
 exports.updateOne = (req, res) => {
     const { _id } = req.params;
-    const { data : reqData } = req.body;
-    const  { projectName, categories, technologies, teamMembers, startDate, endDate, paragraphs } = reqData;
+    const { data: reqData } = req.body;
+    const { projectName, categories, technologies, teamMembers, startDate, endDate, paragraphs } = reqData;
 
     app.colProjects.findOne({ _id: ObjectId(_id) }, (err, result) => {
         if (err) {
