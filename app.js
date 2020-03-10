@@ -54,6 +54,7 @@ app.use((req, res, next) => {
 });
 
 app.use("/projects", require('./src/projects/routes'));
+app.use("/slides", require('./src/slides/routes'));
 app.use("/public", express.static("public"));
 
 server.listen(process.env.PORT, () => console.log(`server is running in ${process.env.NODE_ENVIRONMENT} on ${process.env.URL}`));

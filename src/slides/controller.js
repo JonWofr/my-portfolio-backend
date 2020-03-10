@@ -3,7 +3,6 @@ const path = require('path');
 const app = require('../../app');
 const ObjectId = require('mongodb').ObjectId;
 
-
 exports.getAll = async (req, res) => {
     let { page, limit, query } = req.query;
 
@@ -16,7 +15,7 @@ exports.getAll = async (req, res) => {
     try {
         const lastPage = await getLastPageNumber(limit, query)
 
-        const result = await app.colProjects.find(query).skip(startIndex).limit(limit).toArray();
+        const result = await app.colSlides.find(query).skip(startIndex).limit(limit).toArray();
 
         const body = {
             data: result,
@@ -34,9 +33,8 @@ exports.getAll = async (req, res) => {
     }
 }
 
-
 const getLastPageNumber = async (limit, query) => {
-    let documentCount = await app.colProjects.countDocuments(query);
+    let documentCount = await app.colSlides.countDocuments(query);
 
     return Math.ceil(documentCount / limit);
 }
@@ -46,12 +44,14 @@ exports.insertOne = async (req, res) => {
     const { data: reqData, appendix: { limit } } = req.body;
 
     try {
-        const result = await app.colProjects.findOne({ "projectName": reqData.projectName });
+        const result = await app.colSlides.findOne({ "heading": reqData.heading });
         if (!result) {
             // JSON does not accept undefined values and converts them into null
-            await Promise.all(reqData.paragraphs.filter(paragraph => shouldStoreImage(paragraph.image)).map(paragraph => storeImage(paragraph.image)));
+            if (shouldStoreImage(reqData.image)) {
+                await storeImage(reqData.image);
+            }
 
-            const result = await app.colProjects.insertOne(reqData);
+            const result = await app.colSlides.insertOne(reqData);
             const lastPage = await getLastPageNumber(limit);
 
             const body = {
@@ -66,7 +66,7 @@ exports.insertOne = async (req, res) => {
             return res.status(201).json(body);
         }
         else {
-            return res.status(400).send(`Project with Project Name ${reqData.projectName} has already been inserted into the collection`);
+            return res.status(400).send(`Slide with heading ${reqData.heading} has already been inserted into the collection`);
         }
     }
     catch (err) {
@@ -74,9 +74,7 @@ exports.insertOne = async (req, res) => {
     }
 }
 
-
 const shouldStoreImage = (image) => image.url !== null && image.url.length > 0 && image.dataUrl !== null && image.dataUrl.length > 0;
-
 
 const storeImage = async (image) => {
     const localFilePath = getLocalFilePathByFileName(image.url);
@@ -90,29 +88,27 @@ const storeImage = async (image) => {
     fs.writeFileSync(localFilePath, buffer);
 }
 
-
 const getLocalFilePathByFileName = fileName => {
     const rootPath = path.dirname(require.main.filename);
     return `${rootPath}/public/image_uploads/${fileName}`;
 }
 
-
 const getRemoteFilePathByFileName = fileName => {
     return `${process.env.PROTOCOL}://${process.env.HOST}:${process.env.PORT}/public/image_uploads/${fileName}`;
 }
-
 
 const parseDataUrlToBuffer = (dataUrl) => {
     const encodedImageData = dataUrl.split(',')[1];
     return Buffer.from(encodedImageData, "base64");
 }
 
+
 exports.deleteOne = async (req, res) => {
     const { _id } = req.params;
     const { appendix: { limit } } = req.body;
 
     try {
-        const result = await app.colProjects.findOneAndDelete({ _id: new ObjectId(_id) });
+        const result = await app.colSlides.findOneAndDelete({ _id: new ObjectId(_id) });
         const lastPage = await getLastPageNumber(limit);
 
         const body = {
@@ -127,7 +123,6 @@ exports.deleteOne = async (req, res) => {
         return res.status(500).send(err);
     }
 }
-
 
 exports.updateOne = async (req, res) => {
     const { _id } = req.params;
@@ -138,9 +133,11 @@ exports.updateOne = async (req, res) => {
 
     try {
         // JSON does not accept undefined values and converts them into null
-        await Promise.all(reqData.paragraphs.filter(paragraph => shouldStoreImage(paragraph.image)).map(paragraph => storeImage(paragraph.image)));
+        if (shouldStoreImage(reqData.image)) {
+            await storeImage(reqData.image);
+        }
 
-        const result = await app.colProjects.findOneAndReplace({ _id: new ObjectId(_id) }, reqData);
+        const result = await app.colSlides.findOneAndReplace({ _id: new ObjectId(_id) }, reqData);
         const lastPage = await getLastPageNumber(limit);
         const body = {
             data: result,
@@ -154,3 +151,4 @@ exports.updateOne = async (req, res) => {
         return res.status(500).send(err);
     }
 }
+
