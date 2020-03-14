@@ -44,7 +44,7 @@ exports.insertOne = async (req, res) => {
     const { data: reqData, appendix: { limit } } = req.body;
 
     try {
-        const result = await app.colSlides.findOne({ "heading": reqData.heading });
+        const result = await app.colSlides.findOne({ "title": reqData.title });
         if (!result) {
             // JSON does not accept undefined values and converts them into null
             if (shouldStoreImage(reqData.image)) {
@@ -66,7 +66,7 @@ exports.insertOne = async (req, res) => {
             return res.status(201).json(body);
         }
         else {
-            return res.status(400).send(`Slide with heading ${reqData.heading} has already been inserted into the collection`);
+            return res.status(400).send(`Slide with title ${reqData.title} has already been inserted into the collection`);
         }
     }
     catch (err) {
