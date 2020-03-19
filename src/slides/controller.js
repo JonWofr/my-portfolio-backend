@@ -91,7 +91,7 @@ const getLocalFilePathByFileName = fileName => {
 }
 
 const getRemoteFilePathByFileName = fileName => {
-    return `${process.env.PROTOCOL}://${process.env.HOST}:${process.env.PORT}/public/image_uploads/${fileName}`;
+    return `${process.env.PROTOCOL}://${process.env.DOMAIN}:${process.env.PORT}/public/image_uploads/${fileName}`;
 }
 
 const parseDataUrlToBuffer = (dataUrl) => {
