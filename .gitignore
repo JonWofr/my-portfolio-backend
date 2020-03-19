@@ -1,7 +1,7 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
-/node_modules
+/node_modules/
 
 # environment variables
 /development.env
@@ -9,3 +9,6 @@
 
 # image uploads
 /public/image_uploads
+
+# ide 
+/.vscode

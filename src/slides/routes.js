@@ -1,10 +1,13 @@
 const express = require('express');
 const router = express.Router();
-const controller = require('./controller');
 
-router.get("/", controller.getAll);
-router.post("/", controller.insertOne);
-router.delete("/:_id", controller.deleteOne);
-router.put("/:_id", controller.updateOne);
+
+const slides = require('./controller');
+const users = require('../users/controller')
+
+router.get("/", slides.getAll);
+router.post("/", users.checkToken, slides.insertOne);
+router.delete("/:_id", users.checkToken, slides.deleteOne);
+router.put("/:_id", users.checkToken, slides.updateOne);
 
 module.exports = router

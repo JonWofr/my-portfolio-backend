@@ -1,0 +1,27 @@
+POST http://localhost:2019/users
+Content-Type: application/json
+
+{
+    "data": {
+        "username": "Jonas",
+        "password": "12345"
+    }
+}
+
+###
+
+POST http://localhost:2019/users/login
+Content-Type: application/json
+
+{
+    "data": {
+        "username": "Jonas",
+        "password": "12345"
+    }
+}
+
+###
+
+GET http://localhost:2019/users/who-am-i
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiIxNTg0NTYyMjE2MTI0Iiwic3ViIjoiNWU3MjdmZTQ1OGU0YWUxMDM4MTVmNTA0In0=.mUtuzxwNw+OFL+WmkKzx/VR1/cCq6a8aHD8I5Mj+4UA=

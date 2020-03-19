@@ -11,7 +11,8 @@ const server = http.createServer(app);
 
 const database = "myportfolio";
 const collectionProjects = "projects";
-const collectionSlides = "slides"
+const collectionSlides = "slides";
+const collectionUsers = "users";
 
 //Initialization
 if (process.env.NODE_ENVIRONMENT === "development") dotenv.config({
@@ -28,7 +29,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 app.use((req, res, next) => {
     res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
     res.header("Access-Control-Allow-Methods", "OPTIONS, GET, POST, PUT, PATCH, DELETE");
     next();
 });
@@ -38,11 +39,12 @@ const client = new mongoDb.MongoClient(process.env.MONGO_DB_URL, { useUnifiedTop
 client.connect(err => {
     if (err) throw err;
 
-    console.log(`Successfully connected to mongoDb with URL ${process.env.MONGO_DB_URL}`);
+    console.info(`Successfully connected to mongoDb with URL ${process.env.MONGO_DB_URL}`);
 
     const db = client.db(database);
     exports.colProjects = db.collection(collectionProjects);
-    exports.colSlides = db.collection(collectionSlides)
+    exports.colSlides = db.collection(collectionSlides);
+    exports.colUsers = db.collection(collectionUsers);
     client.close();
 })
 
@@ -55,6 +57,8 @@ app.use((req, res, next) => {
 
 app.use("/projects", require('./src/projects/routes'));
 app.use("/slides", require('./src/slides/routes'));
+app.use("/users", require('./src/users/routes'));
+
 app.use("/public", express.static("public"));
 
-server.listen(process.env.PORT, () => console.log(`server is running in ${process.env.NODE_ENVIRONMENT} on ${process.env.URL}`));
+server.listen(process.env.PORT, () => console.info(`server is running in ${process.env.NODE_ENVIRONMENT} on ${process.env.URL}`));

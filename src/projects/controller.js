@@ -14,15 +14,17 @@ exports.getAll = async (req, res) => {
     const startIndex = (page - 1) * limit;
 
     try {
-        const lastPage = await getLastPageNumber(limit, query)
-
         const result = await app.colProjects.find(query).skip(startIndex).limit(limit).toArray();
+
+        const documentsCount = await app.colProjects.countDocuments(query)
+        const lastPage = Math.ceil(documentsCount / limit);
 
         const body = {
             data: result,
             appendix: {
                 page,
                 lastPage,
+                documentsCount,
                 limit
             }
         };
@@ -32,13 +34,6 @@ exports.getAll = async (req, res) => {
     catch (err) {
         return res.status(500).send(err);
     }
-}
-
-
-const getLastPageNumber = async (limit, query) => {
-    let documentCount = await app.colProjects.countDocuments(query);
-
-    return Math.ceil(documentCount / limit);
 }
 
 
@@ -52,14 +47,17 @@ exports.insertOne = async (req, res) => {
             await Promise.all(reqData.paragraphs.filter(paragraph => shouldStoreImage(paragraph.image)).map(paragraph => storeImage(paragraph.image)));
 
             const result = await app.colProjects.insertOne(reqData);
-            const lastPage = await getLastPageNumber(limit);
+
+            const documentsCount = await app.colProjects.countDocuments()
+            const lastPage = Math.ceil(documentsCount / limit);
 
             const body = {
                 data: {
                     _id: result.insertedId
                 },
                 appendix: {
-                    lastPage
+                    lastPage,
+                    documentsCount
                 }
             };
 
@@ -113,12 +111,15 @@ exports.deleteOne = async (req, res) => {
 
     try {
         const result = await app.colProjects.findOneAndDelete({ _id: new ObjectId(_id) });
-        const lastPage = await getLastPageNumber(limit);
+
+        const documentsCount = await app.colProjects.countDocuments()
+        const lastPage = Math.ceil(documentsCount / limit);
 
         const body = {
             data: result,
             appendix: {
-                lastPage
+                lastPage,
+                documentsCount
             }
         };
         return res.status(200).json(body);
@@ -141,11 +142,15 @@ exports.updateOne = async (req, res) => {
         await Promise.all(reqData.paragraphs.filter(paragraph => shouldStoreImage(paragraph.image)).map(paragraph => storeImage(paragraph.image)));
 
         const result = await app.colProjects.findOneAndReplace({ _id: new ObjectId(_id) }, reqData);
-        const lastPage = await getLastPageNumber(limit);
+
+        const documentsCount = await app.colProjects.countDocuments()
+        const lastPage = Math.ceil(documentsCount / limit);
+        
         const body = {
             data: result,
             appendix: {
-                lastPage
+                lastPage,
+                documentsCount
             }
         };
         return res.status(200).json(body);

@@ -19,6 +19,7 @@
   },
   "homepage": "https://github.com/JonWofr/myportfolio-backend#readme",
   "dependencies": {
+    "bcryptjs": "^2.4.3",
     "dotenv": "^8.2.0",
     "express": "^4.17.1",
     "mongodb": "^3.3.2"
