@@ -21,7 +21,7 @@ if (process.env.NODE_ENV === "development") dotenv.config({
 else if (process.env.NODE_ENV === "production") dotenv.config({
     path: "./production.env"
 });
-else throw  newError("The environment is not know. The server could not be started.");
+else throw new Error("The environment is not know. The server could not be started.");
 
 
 app.use(bodyParser.json({ limit: "20mb" }));
@@ -33,6 +33,8 @@ app.use((req, res, next) => {
     res.header("Access-Control-Allow-Methods", "OPTIONS, GET, POST, PUT, PATCH, DELETE");
     next();
 });
+
+console.info(`Trying to connect to mongoDb with URL ${process.env.MONGO_DB_URL}`);
 
 const client = new mongoDb.MongoClient(process.env.MONGO_DB_URL, { useUnifiedTopology: true, useNewUrlParser: true });
 
@@ -59,10 +61,14 @@ app.use("/projects", require('./src/projects/routes'));
 app.use("/slides", require('./src/slides/routes'));
 app.use("/users", require('./src/users/routes'));
 
-app.use("/public", express.static(`${__dirname}/public`));
+app.use(express.static(`${__dirname}/public`));
 
+// Special code for Heroku deployment
 if (process.env.NODE_ENV === "production") {
-    app.use(express.static(`${__dirname}/../build/index.html`));
+    app.use(express.static(`${__dirname}/../build`));
+    app.all("*", (req, res) => {
+        res.status(200).sendFile(`${__dirname}/build/index.html`);
+    })
 }
 
 server.listen(process.env.PORT, () => console.info(`server is running in ${process.env.NODE_ENV} on ${process.env.URL}`));
