@@ -4,6 +4,7 @@ const http = require("http");
 const bodyParser = require("body-parser");
 const mongoDb = require("mongodb");
 const dotenv = require("dotenv");
+const path = require("path");
 
 //Constants
 const app = express();
@@ -21,8 +22,7 @@ if (process.env.NODE_ENV === "development") dotenv.config({
 else if (process.env.NODE_ENV === "production") dotenv.config({
     path: "./production.env"
 });
-else if (process.env.NODE_ENV === "production-heroku") console.info("Initializing production build on Heroku");
-else throw new Error("The environment is not know. The server could not be started.");
+else throw new Error(`The environment ${process.env.NODE_ENV} is not know. The server could not be started.`);
 
 
 console.info(`Trying to connect to mongoDb with URL ${process.env.MONGO_DB_URL}`);
@@ -54,16 +54,19 @@ app.use((req, res, next) => {
     next();
 });
 
-app.use("api/v1/projects", require('./src/projects/routes'));
-app.use("api/v1/slides", require('./src/slides/routes'));
-app.use("api/v1/users", require('./src/users/routes'));
+// Routes
+app.use("/api/v1/projects", require('./src/projects/routes'));
+app.use("/api/v1/slides", require('./src/slides/routes'));
+app.use("/api/v1/users", require('./src/users/routes'));
 
 app.use(express.static(`${__dirname}/public`));
 
 // Special code for Heroku deployment (This directory has to be embedded in the frontend directory)
-if (process.env.NODE_ENV === "production-heroku") {
-    app.use(express.static(`${__dirname}/../build`));
-    app.use((req, res) => res.status(200).sendFile(`${__dirname}/build/index.html`));
+if (process.env.NODE_ENV === "production") {
+    const pathToPublicFrontendFiles = path.resolve(__dirname, "/../build");
+    console.info("Path to public frontend files", pathToPublicFrontendFiles);
+    app.use(express.static(pathToPublicFrontendFiles));
+    app.use((req, res) => res.status(200).sendFile(`${pathToPublicFrontendFiles}/index.html`));
 }
 
 server.listen(process.env.PORT, () => console.info(`server is running in ${process.env.NODE_ENV} on ${process.env.URL}`));
