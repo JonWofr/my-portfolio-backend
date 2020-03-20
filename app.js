@@ -21,18 +21,9 @@ if (process.env.NODE_ENV === "development") dotenv.config({
 else if (process.env.NODE_ENV === "production") dotenv.config({
     path: "./production.env"
 });
+else if (process.env.NODE_ENV === "production-heroku") console.info("Initializing production build on Heroku");
 else throw new Error("The environment is not know. The server could not be started.");
 
-
-app.use(bodyParser.json({ limit: "20mb" }));
-app.use(bodyParser.urlencoded({ extended: true }));
-
-app.use((req, res, next) => {
-    res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
-    res.header("Access-Control-Allow-Methods", "OPTIONS, GET, POST, PUT, PATCH, DELETE");
-    next();
-});
 
 console.info(`Trying to connect to mongoDb with URL ${process.env.MONGO_DB_URL}`);
 
@@ -52,7 +43,13 @@ client.connect(err => {
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+// Middleware functions
+app.use(bodyParser.json({ limit: "20mb" }));
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use((req, res, next) => {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    res.header("Access-Control-Allow-Methods", "OPTIONS, GET, POST, PUT, PATCH, DELETE");
     console.info('Time: ', Date.now(), req.method, req.originalUrl);
     next();
 });
@@ -63,12 +60,10 @@ app.use("api/v1/users", require('./src/users/routes'));
 
 app.use(express.static(`${__dirname}/public`));
 
-// Special code for Heroku deployment
-if (process.env.NODE_ENV === "production") {
+// Special code for Heroku deployment (This directory has to be embedded in the frontend directory)
+if (process.env.NODE_ENV === "production-heroku") {
     app.use(express.static(`${__dirname}/../build`));
-    app.all("*", (req, res) => {
-        res.status(200).sendFile(`${__dirname}/build/index.html`);
-    })
+    app.use((req, res) => res.status(200).sendFile(`${__dirname}/build/index.html`));
 }
 
 server.listen(process.env.PORT, () => console.info(`server is running in ${process.env.NODE_ENV} on ${process.env.URL}`));
