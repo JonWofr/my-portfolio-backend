@@ -57,9 +57,9 @@ app.use((req, res, next) => {
     next();
 });
 
-app.use("/projects", require('./src/projects/routes'));
-app.use("/slides", require('./src/slides/routes'));
-app.use("/users", require('./src/users/routes'));
+app.use("api/v1/projects", require('./src/projects/routes'));
+app.use("api/v1/slides", require('./src/slides/routes'));
+app.use("api/v1/users", require('./src/users/routes'));
 
 app.use(express.static(`${__dirname}/public`));
 
