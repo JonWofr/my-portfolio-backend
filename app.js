@@ -4,7 +4,6 @@ const http = require("http");
 const bodyParser = require("body-parser");
 const mongoDb = require("mongodb");
 const dotenv = require("dotenv");
-const path = require("path");
 
 //Constants
 const app = express();
@@ -19,18 +18,14 @@ const collectionUsers = "users";
 if (process.env.NODE_ENV === "development") dotenv.config({
     path: "./development.env"
 });
-else if (process.env.NODE_ENV === "production") dotenv.config({
-    path: "./production.env"
-});
-else throw new Error(`The environment ${process.env.NODE_ENV} is not know. The server could not be started.`);
-
+else if (process.env.NODE_ENV !== "production") throw new Error(`The environment ${process.env.NODE_ENV} is not know. The server could not be started.`);
 
 console.info(`Trying to connect to mongoDb with URL ${process.env.MONGO_DB_URL}`);
 
 const client = new mongoDb.MongoClient(process.env.MONGO_DB_URL, { useUnifiedTopology: true, useNewUrlParser: true });
 
 client.connect(err => {
-    if (err) throw err;
+    if (err) throw new Error(err);
 
     console.info(`Successfully connected to mongoDb with URL ${process.env.MONGO_DB_URL}`);
 

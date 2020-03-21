@@ -1,12 +1,11 @@
 {
-  "name": "myportfolio-backend",
+  "name": "jw-portfolio-backend",
   "version": "1.0.0",
   "description": "Testing",
   "main": "\u001b[D\u001b[D\u001b[D\u001bapp.js)",
   "scripts": {
     "dev": "set NODE_ENV=development&&nodemon --inspect app.js",
-    "prod": "set NODE_ENV=production&&node app.js",
-    "start": "node app.js"
+    "start": "set NODE_ENV=development&&nodemon --inspect app.js"
   },
   "repository": {
     "type": "git",

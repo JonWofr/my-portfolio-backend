@@ -4,8 +4,7 @@
 /node_modules/
 
 # environment variables
-/development.env
-/production.env
+/*.env
 
 # image uploads
 /public/image-uploads
