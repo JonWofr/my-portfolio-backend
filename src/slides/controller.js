@@ -1,5 +1,3 @@
-const fs = require('fs');
-const path = require('path');
 const app = require('../../app');
 const ObjectId = require('mongodb').ObjectId;
 
@@ -15,7 +13,7 @@ exports.getAll = async (req, res) => {
     try {
         const result = await app.colSlides.find(query).skip(startIndex).limit(limit).toArray();
 
-        const documentsCount = await app.colProjects.countDocuments(query)
+        const documentsCount = await app.colSlides.countDocuments(query)
         const lastPage = Math.ceil(documentsCount / limit);
 
         const body = {
@@ -43,7 +41,7 @@ exports.insertOne = async (req, res) => {
         if (!result) {
             const result = await app.colSlides.insertOne(reqData);
 
-            const documentsCount = await app.colProjects.countDocuments(query)
+            const documentsCount = await app.colSlides.countDocuments(query)
             const lastPage = Math.ceil(documentsCount / limit);
 
             const body = {
@@ -51,7 +49,8 @@ exports.insertOne = async (req, res) => {
                     _id: result.insertedId
                 },
                 appendix: {
-                    lastPage
+                    lastPage,
+                    documentsCount
                 }
             };
 
@@ -73,7 +72,7 @@ exports.deleteOne = async (req, res) => {
     try {
         const result = await app.colSlides.findOneAndDelete({ _id: new ObjectId(_id) });
 
-        const documentsCount = await app.colProjects.countDocuments(query)
+        const documentsCount = await app.colSlides.countDocuments()
         const lastPage = Math.ceil(documentsCount / limit);
 
         const body = {
@@ -100,7 +99,7 @@ exports.updateOne = async (req, res) => {
     try {
         const result = await app.colSlides.findOneAndReplace({ _id: new ObjectId(_id) }, reqData);
 
-        const documentsCount = await app.colProjects.countDocuments(query)
+        const documentsCount = await app.colSlides.countDocuments()
         const lastPage = Math.ceil(documentsCount / limit);     
         
         const body = {

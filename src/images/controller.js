@@ -9,7 +9,7 @@ exports.uploadImage = async (req, res) => {
     if (!isSupportingFiletype(filetype)) return res.status(400).send(`Filetype ${filetype} is not supported.`);
 
     try {
-        const remoteFilepath = process.env.NODE_ENV === "production" ? await storeImageLocally(filename, req) : await storeImageRemotely(filename, req);
+        const remoteFilepath = process.env.NODE_ENV === "development" ? await storeImageLocally(filename, req) : await storeImageRemotely(filename, req);
         console.log(remoteFilepath);
         const body = {
             url: remoteFilepath
@@ -57,13 +57,13 @@ const getRemoteFilepath = filename => {
 const storeImageRemotely = (filename, stream) => {
     return new Promise((resolve, reject) => {
         const s3 = new AWS.S3({ apiVersion: "2006-03-01" });
-        const putObject = {
+        const params = {
             Bucket: process.env.AWS_BUCKET_NAME,
             Key: `image-uploads/${filename}`,
             Body: stream,
             ContentType: "application/octet-stream"
         }
-        s3.upload(putObject, (err, data) => {
+        s3.upload(params, (err, data) => {
             if (err) reject(err);
             console.log(data);
             resolve(data.Location);
