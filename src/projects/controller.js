@@ -43,9 +43,6 @@ exports.insertOne = async (req, res) => {
     try {
         const result = await app.colProjects.findOne({ "projectName": reqData.projectName });
         if (!result) {
-            // JSON does not accept undefined values and converts them into null
-            await Promise.all(reqData.paragraphs.filter(paragraph => shouldStoreImage(paragraph.image)).map(paragraph => storeImage(paragraph.image)));
-
             const result = await app.colProjects.insertOne(reqData);
 
             const documentsCount = await app.colProjects.countDocuments()
@@ -70,39 +67,6 @@ exports.insertOne = async (req, res) => {
     catch (err) {
         return res.status(500).send(err);
     }
-}
-
-
-const shouldStoreImage = (image) => image.url !== null && image.url.length > 0 && image.dataUrl !== null && image.dataUrl.length > 0;
-
-
-const storeImage = async (image) => {
-    const localFilePath = getLocalFilePathByFileName(image.url);
-    const remoteFilePath = getRemoteFilePathByFileName(image.url);
-
-    const buffer = parseDataUrlToBuffer(image.dataUrl);
-
-    image.url = remoteFilePath;
-    image.dataUrl = undefined;
-
-    fs.writeFileSync(localFilePath, buffer);
-}
-
-
-const getLocalFilePathByFileName = fileName => {
-    const rootPath = path.dirname(require.main.filename);
-    return `${rootPath}/public/image_uploads/${fileName}`;
-}
-
-
-const getRemoteFilePathByFileName = fileName => {
-    return `${process.env.PROTOCOL}://${process.env.DOMAIN}:${process.env.PORT}/image_uploads/${fileName}`;
-}
-
-
-const parseDataUrlToBuffer = (dataUrl) => {
-    const encodedImageData = dataUrl.split(',')[1];
-    return Buffer.from(encodedImageData, "base64");
 }
 
 exports.deleteOne = async (req, res) => {
@@ -138,9 +102,6 @@ exports.updateOne = async (req, res) => {
     delete reqData._id;
 
     try {
-        // JSON does not accept undefined values and converts them into null
-        await Promise.all(reqData.paragraphs.filter(paragraph => shouldStoreImage(paragraph.image)).map(paragraph => storeImage(paragraph.image)));
-
         const result = await app.colProjects.findOneAndReplace({ _id: new ObjectId(_id) }, reqData);
 
         const documentsCount = await app.colProjects.countDocuments()

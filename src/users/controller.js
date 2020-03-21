@@ -17,7 +17,10 @@ exports.insertOne = async (req, res) => {
             password: hashedPassword
         }
 
-        app.colUsers.insertOne(user);
+        const result = await app.colUsers.insertOne(user);
+        const body = { data: { _id: result.insertedId } };
+
+        return res.status(201).json(body);
     }
     catch (err) {
         return res.status(500).send(err);
@@ -40,8 +43,9 @@ exports.login = async (req, res) => {
         if (user && bcryptjs.compareSync(password, user.password)) {
             // Commonly a reference to the User document which matches username and password will be passed as argument in order for the jwt to contain it as payload
             const token = createToken(user._id);
+            const body = { data: { jwt: token } };
 
-            return res.status(200).json({ data: { jwt: token } });
+            return res.status(200).json(body);
         }
         else return res.status(401).send("Authentication failed: Username and/or Password is wrong");
     }

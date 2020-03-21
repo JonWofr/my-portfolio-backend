@@ -8,7 +8,7 @@
 /production.env
 
 # image uploads
-/public/image_uploads
+/public/image-uploads
 
 # IDE 
 /.vscode
