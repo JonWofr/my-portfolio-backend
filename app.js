@@ -42,6 +42,9 @@ client.connect(err => {
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use((req, res, next) => {
+    if (process.env.NODE_ENV === "development") {
+        res.header("Access-Control-Allow-Origin", "*");
+    }
     res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
     res.header("Access-Control-Allow-Methods", "OPTIONS, HEAD, GET, POST, PUT, PATCH, DELETE");
     console.info('Time: ', Date.now(), req.method, req.originalUrl);

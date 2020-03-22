@@ -41,7 +41,7 @@ exports.insertOne = async (req, res) => {
         if (!result) {
             const result = await app.colSlides.insertOne(reqData);
 
-            const documentsCount = await app.colSlides.countDocuments(query)
+            const documentsCount = await app.colSlides.countDocuments()
             const lastPage = Math.ceil(documentsCount / limit);
 
             const body = {
