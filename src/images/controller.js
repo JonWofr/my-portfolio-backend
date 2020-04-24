@@ -6,13 +6,28 @@ exports.uploadImage = async (req, res) => {
     const filename = req.query.filename;
     const filetype = req.query.filetype;
 
-    if (!isSupportingFiletype(filetype)) return res.status(400).send(`Filetype ${filetype} is not supported.`);
+    if (!isSupportingFiletype(filetype)) {
+        console.warn(`Filetype ${filetype} is not supported.`);
+        return res.status(400).send(`Filetype ${filetype} is not supported.`);
+    }
+
+    console.info(`About to save new image with name ${filename} and type ${filetype}`);
 
     try {
-        const remoteFilepath = process.env.NODE_ENV === "development" ? await storeImageLocally(filename, req) : await storeImageRemotely(filename, req);
-        console.log(remoteFilepath);
+        let filePath;
+        if (process.env.NODE_ENV === "development") {
+            filePath = await storeImageLocally(filename, req)
+        }
+        else if (process.env.NODE_ENV === "production") {
+            filePath = await storeImageRemotely(filename, req);
+        }
+        else {
+            console.warn(`Environment ${process.env.NODE_ENV} is not known. Image cannot be safed.`);
+            return res.status(500).send(`Environment ${process.env.NODE_ENV} is not known. Image cannot be safed.`);
+        }
+
         const body = {
-            url: remoteFilepath
+            url: filePath
         }
         return res.status(201).json(body);
     }
@@ -21,7 +36,7 @@ exports.uploadImage = async (req, res) => {
     }
 }
 
-const isSupportingFiletype = (filetype) => filetype === "image/jpeg" || filetype === "image/png";
+const isSupportingFiletype = (filetype) => filetype === "image/jpeg" || filetype === "image/png" || filetype === "image/svg xml";
 
 const storeImageLocally = (filename, stream) => {
     return new Promise((resolve, reject) => {
@@ -32,7 +47,7 @@ const storeImageLocally = (filename, stream) => {
             reject(err)
         });
         stream.on("end", () => {
-            console.log("Successfully uploaded image");
+            console.info("Successfully uploaded image");
             fs.closeSync(fd);
             resolve(getRemoteFilepath(filename));
         });
@@ -65,7 +80,7 @@ const storeImageRemotely = (filename, stream) => {
         }
         s3.upload(params, (err, data) => {
             if (err) reject(err);
-            console.log(data);
+            console.info("Successfully uploaded image");
             resolve(data.Location);
         })
     })

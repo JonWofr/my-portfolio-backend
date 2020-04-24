@@ -61,7 +61,6 @@ app.use(express.static(`${__dirname}/public`));
 
 // Special code for Heroku deployment (This directory has to be embedded in the frontend directory)
 if (process.env.NODE_ENV === "production") {
-    console.info(__dirname);
     app.use(express.static("/app/build"));
     app.use((req, res) => res.status(200).sendFile(`/app/build/index.html`));
 }
