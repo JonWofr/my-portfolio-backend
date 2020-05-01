@@ -4,8 +4,7 @@
   "description": "Testing",
   "main": "\u001b[D\u001b[D\u001b[D\u001bapp.js)",
   "scripts": {
-    "dev": "set NODE_ENV=development&&nodemon --inspect app.js",
-    "start": "set NODE_ENV=development&&nodemon --inspect app.js"
+    "dev": "set NODE_ENV=development&&nodemon --inspect app.js"
   },
   "repository": {
     "type": "git",
