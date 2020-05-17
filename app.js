@@ -65,4 +65,4 @@ if (process.env.NODE_ENV === "production") {
     app.use((req, res) => res.status(200).sendFile(`/app/build/index.html`));
 }
 
-server.listen(process.env.PORT, () => console.info(`server is running in ${process.env.NODE_ENV} on ${process.env.URL}`));
+server.listen(process.env.PORT, () => console.info(`server is running in ${process.env.NODE_ENV} on ${process.env.PROTOCOL}://${process.env.DOMAIN}:${process.env.PORT}`));
